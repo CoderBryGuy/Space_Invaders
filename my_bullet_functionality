@@ -24,22 +24,20 @@ playerY_velocity = 0
 
 # enemy
 enemyImg = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/enemy_alien.png')
-enemyX = random.randint(0, 736)
+enemyX = random.randint(0, 800)
 enemyY = random.randint(50, 150)
 enemy_x_velocity = 2
 enemy_y_velocity = 0
 
 # bullet
 bulletImg = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/bullet.png')
-bulletX = playerX
-bulletY = playerY
+bulletX = 0
+bulletY = 0
 bullet_x_velocity = 0
-bullet_y_velocity = 5
+bullet_y_velocity = 0
 # bullet_state = "ready"
 bullet_is_firing = False
-
-
-# bullet_x_locked = False
+bullet_x_locked = False
 
 
 def clamp(val, max, min):
@@ -93,20 +91,43 @@ def enemy(x, y):
 
 
 def bullet(x, y):
+    global bulletX
+    global bulletY
+
+    bulletX = x
+    bulletY = y
+
     screen.blit(bulletImg, (x, y))
 
 
-def fire_bullet(x, y):
-    global bullet_is_firing
-    bullet_is_firing = True
-    screen.blit(bulletImg, (x + 16, y + 10))
+def update_bullet(spaceship_x, spaceship_y):
+    print("not firing")
+    bullet(spaceship_x, spaceship_y)
+
+
+def fire_bullet(x):
+    global bullet_x_locked
+    global bulletX
+    global bullet_y_velocity
+    global bulletY
+    print("FIRE BULLET")
+
+    bulletY = bulletY + bullet_y_velocity
+
+    if not bullet_x_locked:
+        bullet_x_locked = True
+        bulletX = x
+
+    bullet(bulletX, bulletY)
 
 
 running = True
+count = 0
 
 # game loop
-while running:
 
+while running:
+    count = count + 1
     # RGB red, green, blue
     screen.fill((0, 0, 0))
 
@@ -123,12 +144,13 @@ while running:
                 playerX_velocity = -5
             if event.key == pygame.K_RIGHT:
                 playerX_velocity = 5
+            if event.key == pygame.K_UP:
+                playerY_velocity = -5
+            if event.key == pygame.K_DOWN:
+                playerY_velocity = 5
             if event.key == pygame.K_SPACE:
-                if not bullet_is_firing:
-                    bulletX = playerX
-                    fire_bullet(bulletX, bulletY)
-
-        # if keystroke is released
+                bullet_is_firing = True
+                bullet_y_velocity = -4
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                 playerX_velocity = 0
@@ -139,23 +161,19 @@ while running:
     playerY = clamp(playerY, 536, 0)
     playerX += playerX_velocity
     playerX = clamp(playerX, 736, 0)
-    player(playerX, playerY)
+    # player(playerX, playerY)
+
+    check_bullet_coordinates(bulletX, bulletY, bullet_x_velocity, bullet_y_velocity)
+    if not bullet_is_firing:
+        update_bullet(playerX, playerY)
+    elif bullet_is_firing:
+        fire_bullet(playerX)
 
     enemy_x_velocity = alternate_enemy_velocity(enemyX, enemy_x_velocity, 736, 0)
     enemyX += enemy_x_velocity
-
-    # bullet movement
-    if bulletY <= 0:
-        bulletY = 480
-        bullet_is_firing = False
-    if bullet_is_firing:
-        fire_bullet(bulletX, bulletY)
-        bulletY -= bullet_y_velocity
-
-    # check various coordinates at give intervals
-    # if count > 50:
-    #     count = 0
-    #     # check_enemy_coordinates(enemyX, enemyY, enemy_x_velocity, enemy_y_velocity)
+    if count > 50:
+        count = 0
+        # check_enemy_coordinates(enemyX, enemyY, enemy_x_velocity, enemy_y_velocity)
 
     enemy(enemyX, enemyY)
 
