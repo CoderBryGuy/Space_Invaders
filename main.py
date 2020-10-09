@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 # initialize pygame
 pygame.init()
@@ -22,12 +23,27 @@ playerY = 480
 playerX_velocity = 0
 playerY_velocity = 0
 
+# # enemy
+# enemyImg = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/enemy_alien.png')
+# enemyX = random.randint(0, 736)
+# enemyY = random.randint(50, 150)
+# enemy_x_velocity = 2
+# enemy_y_velocity = 0
+
 # enemy
-enemyImg = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/enemy_alien.png')
-enemyX = random.randint(0, 736)
-enemyY = random.randint(50, 150)
-enemy_x_velocity = 2
-enemy_y_velocity = 0
+enemyImg = []
+enemyX = []
+enemyY = []
+enemy_x_velocity = []
+enemy_y_velocity = []
+num_of_enemies = 6
+
+for i in range(num_of_enemies):
+    enemyImg.append(pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/enemy_alien.png'))
+    enemyX.append(random.randint(0, 736))
+    enemyY.append(random.randint(50, 150))
+    enemy_x_velocity.append(2)
+    enemy_y_velocity.append(0)
 
 # bullet
 bulletImg = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/bullet.png')
@@ -38,8 +54,7 @@ bullet_y_velocity = 5
 # bullet_state = "ready"
 bullet_is_firing = False
 
-
-# bullet_x_locked = False
+score = 0
 
 
 def clamp(val, max, min):
@@ -53,21 +68,21 @@ def clamp(val, max, min):
         return val
 
 
-def alternate_enemy_velocity(enemy_x, vel_x, max_x, min_x):
+def alternate_enemy_velocity(en_x, en_vel_x, max_x, min_x, i):
     global enemyY
     y_change = 10
-    if enemy_x >= max_x:
-        vel_x = vel_x * -1
-        enemyY = enemyY + y_change
-        enemyY = clamp(enemyY, 200, 0)
-        return vel_x
-    elif enemy_x <= min_x:
-        vel_x = vel_x * -1
-        enemyY = enemyY + y_change
-        enemyY = clamp(enemyY, 200, 0)
-        return vel_x
+    if en_x >= max_x:
+        en_vel_x = en_vel_x * -1
+        enemyY[i] = enemyY[i] + y_change
+        enemyY[i] = clamp(enemyY[i], 600, 0)
+        return en_vel_x
+    elif en_x <= min_x:
+        en_vel_x = en_vel_x * -1
+        enemyY[i] = enemyY[i] + y_change
+        enemyY[i] = clamp(enemyY[i], 600, 0)
+        return en_vel_x
     else:
-        return vel_x
+        return en_vel_x
 
 
 def check_enemy_coordinates(enemyX, enemyY, velX, velY):
@@ -88,8 +103,8 @@ def player(x, y):
     screen.blit(playerImg, (playerX, playerY))
 
 
-def enemy(x, y):
-    screen.blit(enemyImg, (enemyX, enemyY))
+def enemy(x, y, i):
+    screen.blit(enemyImg[i], (x, y))
 
 
 def bullet(x, y):
@@ -100,6 +115,15 @@ def fire_bullet(x, y):
     global bullet_is_firing
     bullet_is_firing = True
     screen.blit(bulletImg, (x + 16, y + 10))
+
+
+def is_collision(enX, enY, bulletX, bulletY):
+    distance = math.sqrt((math.pow(enX - bulletX, 2)) + (math.pow(enY - bulletY, 2)))
+
+    if distance < 27:
+        return True
+    else:
+        return False
 
 
 running = True
@@ -141,8 +165,21 @@ while running:
     playerX = clamp(playerX, 736, 0)
     player(playerX, playerY)
 
-    enemy_x_velocity = alternate_enemy_velocity(enemyX, enemy_x_velocity, 736, 0)
-    enemyX += enemy_x_velocity
+    for i in range(num_of_enemies):
+        enemy_x_velocity[i] = alternate_enemy_velocity(enemyX[i], enemy_x_velocity[i], 736, 0, i)
+        enemyX[i] += enemy_x_velocity[i]
+
+        # collision
+        collision = is_collision(enemyX[i], enemyY[i], bulletX, bulletY)
+        if collision:
+            bulletY = 480
+            # bullet_state = "ready"
+            bullet_is_firing = False
+            score += 1
+            print(score)
+            enemyX[i] = random.randint(0, 736)
+            enemyY[i] = random.randint(50, 150)
+        enemy(enemyX[i], enemyY[i], i)
 
     # bullet movement
     if bulletY <= 0:
@@ -156,7 +193,5 @@ while running:
     # if count > 50:
     #     count = 0
     #     # check_enemy_coordinates(enemyX, enemyY, enemy_x_velocity, enemy_y_velocity)
-
-    enemy(enemyX, enemyY)
 
     pygame.display.update()

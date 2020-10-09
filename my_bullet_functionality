@@ -178,3 +178,18 @@ while running:
     enemy(enemyX, enemyY)
 
     pygame.display.update()
+
+# enemy
+enemyImg = []
+enemyX = []
+enemyY = []
+enemyX_change = []
+enemyY_change = []
+num_of_enemies = 6
+
+for i in range(num_of_enemies):
+    enemyImg.append(pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/enemy_alien.png'))
+    enemyX.append(random.randint(0, 736))
+    enemyY.append(random.randint(50, 150))
+    enemy_x_velocity.append( 2)
+    enemy_y_velocity.append( 0)
