@@ -1,9 +1,12 @@
 import pygame
+from pygame import mixer
 import random
 import math
 
 # initialize pygame
 pygame.init()
+pygame.mixer.init()
+clock = pygame.time.Clock()
 
 # title and icon
 icon = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/ufo .png')
@@ -12,6 +15,10 @@ pygame.display.set_caption("Space Invaders")
 
 # background
 background = pygame.image.load("/home/bryan/IdeaProjects/Python/Space_Invaders/background1.png")
+
+# background sound
+mixer.music.load('/home/bryan/IdeaProjects/Python/Space_Invaders/game_music.wav')
+mixer.music.play(-1)
 
 # create screen
 screen = pygame.display.set_mode((800, 600))
@@ -50,11 +57,40 @@ bulletImg = pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/bu
 bulletX = playerX
 bulletY = playerY
 bullet_x_velocity = 0
-bullet_y_velocity = 5
+bullet_y_velocity = 7
 # bullet_state = "ready"
 bullet_is_firing = False
 
-score = 0
+# explosion
+explosionImg = []
+explosionX = []
+explosionY = []
+explosion_countDown = []
+num_of_potential_explosions = num_of_enemies
+
+for i in range(num_of_potential_explosions):
+    explosionImg.append(pygame.image.load('/home/bryan/IdeaProjects/Python/Space_Invaders/explosion.png'))
+    explosionX.append(0)
+    explosionY.append(0)
+    explosion_countDown.append(0)
+
+# score
+score_value = 0
+font = pygame.font.Font('freesansbold.ttf', 32)
+textX = 10
+textY = 10
+
+# game over
+over_font = pygame.font.Font('freesansbold.ttf', 64)
+
+
+def game_over_text():
+    over_text = over_font.render('GAME OVER', True, (255, 255, 255))
+    screen.blit(over_text, (200, 250))
+
+def show_score(x, y):
+    score = font.render("Score : " + str(score_value), True, (255, 255, 255))
+    screen.blit(score, (x, y))
 
 
 def clamp(val, max, min):
@@ -70,7 +106,7 @@ def clamp(val, max, min):
 
 def alternate_enemy_velocity(en_x, en_vel_x, max_x, min_x, i):
     global enemyY
-    y_change = 10
+    y_change = 40
     if en_x >= max_x:
         en_vel_x = en_vel_x * -1
         enemyY[i] = enemyY[i] + y_change
@@ -117,6 +153,24 @@ def fire_bullet(x, y):
     screen.blit(bulletImg, (x + 16, y + 10))
 
 
+def init_explosion(x, y, j):
+    global explosionX
+    global explosionY
+    global explosion_countDown
+
+    explosionX[j] = x
+    explosionY[j] = y
+    explosion_countDown[j] = 50
+
+
+def print_explosion(j):
+    global explosionImg
+    global explosionX
+    global explosionY
+
+    screen.blit(explosionImg[j], (explosionX[j], explosionY[j]))
+
+
 def is_collision(enX, enY, bulletX, bulletY):
     distance = math.sqrt((math.pow(enX - bulletX, 2)) + (math.pow(enY - bulletY, 2)))
 
@@ -149,6 +203,8 @@ while running:
                 playerX_velocity = 5
             if event.key == pygame.K_SPACE:
                 if not bullet_is_firing:
+                    bullet_sound = mixer.Sound('/home/bryan/IdeaProjects/Python/Space_Invaders/laser_fire.wav')
+                    bullet_sound.play()
                     bulletX = playerX
                     fire_bullet(bulletX, bulletY)
 
@@ -166,20 +222,39 @@ while running:
     player(playerX, playerY)
 
     for i in range(num_of_enemies):
+
+        # game over
+        if enemyY[i] > 400:
+            for j in range(num_of_enemies):
+                enemyY[j] = 2000
+            game_over_text()
+            break
+
         enemy_x_velocity[i] = alternate_enemy_velocity(enemyX[i], enemy_x_velocity[i], 736, 0, i)
         enemyX[i] += enemy_x_velocity[i]
 
         # collision
         collision = is_collision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
+            collision_sound = mixer.Sound('/home/bryan/IdeaProjects/Python/Space_Invaders/enemy_hit.wav')
+            collision_sound.play()
             bulletY = 480
             # bullet_state = "ready"
             bullet_is_firing = False
-            score += 1
-            print(score)
+            score_value += 1
+            print(score_value)
+
+            init_explosion(enemyX[i], enemyY[i], i)
+
             enemyX[i] = random.randint(0, 736)
             enemyY[i] = random.randint(50, 150)
+
         enemy(enemyX[i], enemyY[i], i)
+
+        for k in range(num_of_potential_explosions):
+            if explosion_countDown[k] > 0:
+                explosion_countDown[k] -= 1
+                print_explosion(k)
 
     # bullet movement
     if bulletY <= 0:
@@ -193,5 +268,5 @@ while running:
     # if count > 50:
     #     count = 0
     #     # check_enemy_coordinates(enemyX, enemyY, enemy_x_velocity, enemy_y_velocity)
-
+    show_score(textX, textY)
     pygame.display.update()
